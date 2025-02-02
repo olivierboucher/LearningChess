@@ -8,5 +8,8 @@ public abstract class Piece
 
     public PieceColor Color { get; private set; }
     
+    public bool HasMoved { get; set; }
+
+    
     public abstract Coord[] GetAvailableMoves(Coord coord);
 }
