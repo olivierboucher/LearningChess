@@ -20,4 +20,9 @@ public class Bishop : Piece
 
         return coords.ToArray();
     }
+
+    public override Piece Copy()
+    {
+        return new Bishop(color: Color);
+    }
 }

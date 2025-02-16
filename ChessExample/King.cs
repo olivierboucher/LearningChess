@@ -20,4 +20,9 @@ public class King : Piece
             new Coord(coord.X + 1, coord.Y + 1),
         ];
     }
+
+    public override Piece Copy()
+    {
+        return new King(Color);
+    }
 }

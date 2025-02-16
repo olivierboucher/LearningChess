@@ -65,6 +65,26 @@ public class Board
         return null;
     }
 
+    private List<Coord> GetAllPieceCoords(PieceColor color, Type clazz)
+    {
+        List<Coord> coords = new List<Coord>();
+
+        for (int i = 0; i < SIZE; i++)
+        {
+            for (int j = 0; j < SIZE; j++)
+            {
+                Piece? currentPiece = _pieces[i, j];
+
+                if (currentPiece != null && currentPiece.Color == color && currentPiece.GetType() == clazz)
+                {
+                    coords.Add(new Coord(i, j));
+                }
+            }
+        }
+
+        return coords;
+    }
+
     private Piece? GetPiece(Coord coord)
     {
         if (coord.X >= 0 && coord.X < SIZE && coord.Y >= 0 && coord.Y < SIZE)
@@ -133,27 +153,25 @@ public class Board
                     }
                 }
 
-                if (piece is King)
+                if (piece is King king)
                 {
                     var color = piece.Color;
-                    var threateningMoves = new HashSet<Coord>();
+                    var threateningMoves =
+                        GetThreateningMoves(color == PieceColor.White ? PieceColor.Black : PieceColor.White);
 
-                    for (int i = 0; i < SIZE; i++)
+                    if (king.HasMoved == false)
                     {
-                        for (int j = 0; j < SIZE; j++)
+                        var rookPositions = GetAllPieceCoords(piece.Color, typeof(Rook));
+                        foreach (var rookPosition in rookPositions)
                         {
-                            var currentPiece = _pieces[i, j];
-
-                            //On est seulement intéressé aux pièces ennemies
-                            if (currentPiece != null && currentPiece.Color != color)
+                            var rookPiece = GetPiece(rookPosition);
+                            if (rookPiece.HasMoved == false)
                             {
-                                // On ajoute les déplacement possibles de la pièce ennemie dans la liste
-                                threateningMoves.UnionWith(GetAvailableMoves(new Coord(i, j)));
+                                validMoves.Add(rookPosition);
                             }
                         }
                     }
-                    
-                    // TODO: ajouter castler
+
 
                     // On enlève tout les mouvement ou le roi serait mis en échec
                     validMoves.RemoveAll(x => threateningMoves.Contains(x));
@@ -163,15 +181,15 @@ public class Board
                 if (piece is Rook rook)
                 {
                     var kingPosition = GetPieceCoords(piece.Color, typeof(King));
-                    var king = GetPiece(kingPosition);
+                    var kingPiece = GetPiece(kingPosition);
 
-                    if (rook.HasMoved == false && king.HasMoved == false)
+                    if (rook.HasMoved == false && kingPiece.HasMoved == false)
                     {
                         validMoves.Add(kingPosition);
                     }
                 }
 
-                //En passant
+                //TODO: En passant
 
                 return validMoves.ToArray();
             }
@@ -182,29 +200,135 @@ public class Board
 
     public bool MovePiece(Coord from, Coord to)
     {
+        var currentPiece = GetPiece(from);
         var possibleMoves = GetAvailableMoves(from);
 
         // Vérifier si "to" est dans la liste des moves possible, sinon, on fait rien
         if (possibleMoves.Contains(to))
         {
-            
-                
-            //TODO: Mouvement spécial comme le rook, ne tue pas le roi etc donc faut en prendre compte
-            
-            //Si on veut guarder un registre des pièces mortes, on pourrait vérifier
-            // si to contient une pièce énemie, et la sauvegarder dans une liste
-            // référencant les pièces mortes
-            _pieces[to.X, to.Y] = _pieces[from.X, from.Y];
-            _pieces[to.X, to.Y].HasMoved = true;
-            _pieces[from.X, from.Y] = null;
+            var destinationPiece = GetPiece(to);
+
+            //Déplacement sur une piece alliée
+            if (currentPiece.Color == destinationPiece.Color)
+            {
+                // Arrive juste pour le castle donc on peut assumer que c'est le cas
+                currentPiece.HasMoved = true;
+                destinationPiece.HasMoved = true;
+
+                _pieces[from.X, from.Y] = destinationPiece;
+                _pieces[to.X, to.Y] = currentPiece;
+            }
+            // Déplcament sur une case ennemi
+            else if (currentPiece.Color != destinationPiece.Color)
+            {
+                var deadPiece = _pieces[to.X, to.Y];
+                _pieces[to.X, to.Y] = _pieces[from.X, from.Y];
+                //TODO: on peut garder une liste des pieces morte au besoin
+            }
+            // Déplacement sur une case vide
+            else
+            {
+                _pieces[to.X, to.Y] = _pieces[from.X, from.Y];
+                _pieces[to.X, to.Y].HasMoved = true;
+                _pieces[from.X, from.Y] = null;
+            }
+
+
             return true;
         }
 
         return false;
     }
 
-    public bool DetectCheckMate()
+
+    public HashSet<Coord> GetThreateningMoves(PieceColor color)
     {
-        return false;
+        var threateningMoves = new HashSet<Coord>();
+
+        for (int i = 0; i < SIZE; i++)
+        {
+            for (int j = 0; j < SIZE; j++)
+            {
+                var currentPiece = _pieces[i, j];
+
+                //On est seulement intéressé aux pièces qui match la couleur spécifiée
+                if (currentPiece != null && currentPiece.Color == color)
+                {
+                    // On ajoute les déplacement possibles de la pièce dans la liste
+                    threateningMoves.UnionWith(GetAvailableMoves(new Coord(i, j)));
+                }
+            }
+        }
+
+        return threateningMoves;
+    }
+
+    public Board Copy()
+    {
+        var copy = new Board();
+
+        for (int i = 0; i < SIZE; i++)
+        {
+            for (int j = 0; j < SIZE; j++)
+            {
+                copy._pieces[i, j] = _pieces[i, j]?.Copy() ?? null;
+            }
+        }
+
+        return copy;
+    }
+
+    public bool IsKingChecked(PieceColor color)
+    {
+        var kingCoords = GetPieceCoords(color, typeof(King));
+        var ennemyColor = color == PieceColor.White ? PieceColor.Black : PieceColor.White;
+
+        //Détecte le check
+        var threateningMoves = GetThreateningMoves(ennemyColor);
+        // On vérifie si le roi se situe sur un des décplaments ennemi possibles
+        return threateningMoves.Contains(kingCoords);
+    }
+
+    public bool IsCheckMate(PieceColor color)
+    {
+        var kingCoords = GetPieceCoords(color, typeof(King));
+
+        if (!IsKingChecked(color))
+        {
+            return false;
+        }
+
+        var kingAvailableMoves = GetAvailableMoves(kingCoords);
+
+        if (kingAvailableMoves.Length > 0)
+        {
+            return false;
+        }
+
+        //Le roi ne peut pas se déplacer, donc le seul cas ou il n'est pas échec et mat est si une piece peut bloquer
+        for (int i = 0; i < SIZE; i++)
+        {
+            for (int j = 0; j < SIZE; j++)
+            {
+                var currentPiece = _pieces[i, j];
+
+                if (currentPiece != null && currentPiece.Color == color)
+                {
+                    var possibleMoves = GetAvailableMoves(new Coord(i, j));
+                    foreach (var possibleMove in possibleMoves)
+                    {
+                        var simulatedBoard = Copy();
+                        simulatedBoard.MovePiece(new Coord(i, j), possibleMove);
+
+                        if (!simulatedBoard.IsKingChecked(color))
+                        {
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+
+        return true;
     }
 }

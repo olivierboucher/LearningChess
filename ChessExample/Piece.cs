@@ -12,4 +12,6 @@ public abstract class Piece
 
     
     public abstract Coord[] GetAvailableMoves(Coord coord);
+
+    public abstract Piece Copy();
 }

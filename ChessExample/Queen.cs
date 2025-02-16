@@ -27,4 +27,9 @@ public class Queen: Piece
 
         return coords.ToArray();
     }
+
+    public override Piece Copy()
+    {
+        return new Queen(Color);
+    }
 }

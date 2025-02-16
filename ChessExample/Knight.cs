@@ -21,4 +21,9 @@ public class Knight : Piece
             new Coord(coord.X - 3, coord.Y - 1),
         };
     }
+
+    public override Piece Copy()
+    {
+        return new Knight(Color);
+    }
 }

@@ -33,4 +33,9 @@ public class Pawn : Piece
 
         return coords.ToArray();
     }
+
+    public override Piece Copy()
+    {
+        return new Pawn(Color);
+    }
 }

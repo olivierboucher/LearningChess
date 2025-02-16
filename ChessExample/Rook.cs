@@ -20,4 +20,9 @@ public class Rook : Piece
 
         return coords.ToArray();
     }
+
+    public override Piece Copy()
+    {
+        return new Rook(Color);
+    }
 }
