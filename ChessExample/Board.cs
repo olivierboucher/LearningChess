@@ -1,4 +1,4 @@
-namespace ChessExample;
+namespace ChessLibrary;
 
 public class Board
 {
@@ -16,32 +16,32 @@ public class Board
             }
         }
 
-        _pieces[0, 0] = new Rook(PieceColor.White);
-        _pieces[1, 0] = new Knight(PieceColor.White);
-        _pieces[2, 0] = new Bishop(PieceColor.White);
-        _pieces[3, 0] = new Queen(PieceColor.White);
-        _pieces[4, 0] = new King(PieceColor.White);
-        _pieces[5, 0] = new Bishop(PieceColor.White);
-        _pieces[6, 0] = new Knight(PieceColor.White);
-        _pieces[7, 0] = new Rook(PieceColor.White);
+        _pieces[0, 0] = new Rook(PieceColor.Black);
+        _pieces[1, 0] = new Knight(PieceColor.Black);
+        _pieces[2, 0] = new Bishop(PieceColor.Black);
+        _pieces[3, 0] = new Queen(PieceColor.Black);
+        _pieces[4, 0] = new King(PieceColor.Black);
+        _pieces[5, 0] = new Bishop(PieceColor.Black);
+        _pieces[6, 0] = new Knight(PieceColor.Black);
+        _pieces[7, 0] = new Rook(PieceColor.Black);
 
         for (int i = 0; i < SIZE; i++)
         {
-            _pieces[i, 1] = new Pawn(PieceColor.White);
+            _pieces[i, 1] = new Pawn(PieceColor.Black);
         }
 
-        _pieces[0, 7] = new Rook(PieceColor.Black);
-        _pieces[1, 7] = new Knight(PieceColor.Black);
-        _pieces[2, 7] = new Bishop(PieceColor.Black);
-        _pieces[3, 7] = new Queen(PieceColor.Black);
-        _pieces[4, 7] = new King(PieceColor.Black);
-        _pieces[5, 7] = new Bishop(PieceColor.Black);
-        _pieces[6, 7] = new Knight(PieceColor.Black);
-        _pieces[7, 7] = new Rook(PieceColor.Black);
+        _pieces[0, 7] = new Rook(PieceColor.White);
+        _pieces[1, 7] = new Knight(PieceColor.White);
+        _pieces[2, 7] = new Bishop(PieceColor.White);
+        _pieces[3, 7] = new Queen(PieceColor.White);
+        _pieces[4, 7] = new King(PieceColor.White);
+        _pieces[5, 7] = new Bishop(PieceColor.White);
+        _pieces[6, 7] = new Knight(PieceColor.White);
+        _pieces[7, 7] = new Rook(PieceColor.White);
 
         for (int i = 0; i < SIZE; i++)
         {
-            _pieces[i, 6] = new Pawn(PieceColor.Black);
+            _pieces[i, 6] = new Pawn(PieceColor.White);
         }
     }
 
@@ -85,7 +85,7 @@ public class Board
         return coords;
     }
 
-    private Piece? GetPiece(Coord coord)
+    public Piece? GetPiece(Coord coord)
     {
         if (coord.X >= 0 && coord.X < SIZE && coord.Y >= 0 && coord.Y < SIZE)
         {
@@ -97,18 +97,23 @@ public class Board
 
     public Coord[] GetAvailableMoves(Coord coord)
     {
+        return GetAvailableMoves(coord, false);
+    }
+
+    public Coord[] GetAvailableMoves(Coord coord, bool ignoreThreatheningMoves)
+    {
         if (coord.X >= 0 && coord.X < SIZE && coord.Y >= 0 && coord.Y < SIZE)
         {
             var piece = _pieces[coord.X, coord.Y];
             if (piece != null)
             {
-                var coords = piece.GetAvailableMoves(coord);
+                var coords = piece.GetAvailableMoves(this, coord);
                 var validMoves = new List<Coord>();
 
                 // Valide que chaque move est une coordonnée réelle
                 foreach (var possibleCoord in coords)
                 {
-                    if (coord.X >= 0 && coord.X < SIZE && coord.Y >= 0 && coord.Y < SIZE)
+                    if (possibleCoord.X >= 0 && possibleCoord.X < SIZE && possibleCoord.Y >= 0 && possibleCoord.Y < SIZE)
                     {
                         // Si une piece à cet endroit est de la même couleur, on ignore l'ajout de la position
                         if (_pieces[possibleCoord.X, possibleCoord.Y]?.Color == piece.Color)
@@ -127,28 +132,42 @@ public class Board
                 // Pawn
                 if (piece is Pawn)
                 {
-                    if (piece.Color == PieceColor.White)
+                    if (piece.Color == PieceColor.Black)
                     {
-                        if (_pieces[coord.X + 1, coord.Y + 1]?.Color == PieceColor.Black)
+                        if(coord.X < 7 && coord.Y < 7)
                         {
-                            validMoves.Add(new Coord(coord.X + 1, coord.Y + 1));
+                            if (_pieces[coord.X + 1, coord.Y + 1]?.Color == PieceColor.White)
+                            {
+                                validMoves.Add(new Coord(coord.X + 1, coord.Y + 1));
+                            }
                         }
 
-                        if (_pieces[coord.X - 1, coord.Y + 1]?.Color == PieceColor.Black)
+                        if(coord.X > 0 && coord.X < 7)
                         {
-                            validMoves.Add(new Coord(coord.X - 1, coord.Y + 1));
+                            if (_pieces[coord.X - 1, coord.Y + 1]?.Color == PieceColor.White)
+                            {
+                                validMoves.Add(new Coord(coord.X - 1, coord.Y + 1));
+                            }
                         }
                     }
-                    else if (piece.Color == PieceColor.Black)
+                    else if (piece.Color == PieceColor.White)
                     {
-                        if (_pieces[coord.X + 1, coord.Y - 1]?.Color == PieceColor.White)
+
+                        if(coord.X < 7 && coord.Y > 0)
                         {
-                            validMoves.Add(new Coord(coord.X + 1, coord.Y - 1));
+                            if (_pieces[coord.X + 1, coord.Y - 1]?.Color == PieceColor.Black)
+                            {
+                                validMoves.Add(new Coord(coord.X + 1, coord.Y - 1));
+                            }
                         }
 
-                        if (_pieces[coord.X - 1, coord.Y - 1]?.Color == PieceColor.White)
+                        if(coord.X > 0 && coord.Y > 0)
                         {
-                            validMoves.Add(new Coord(coord.X - 1, coord.Y - 1));
+
+                            if (_pieces[coord.X - 1, coord.Y - 1]?.Color == PieceColor.Black)
+                            {
+                                validMoves.Add(new Coord(coord.X - 1, coord.Y - 1));
+                            }
                         }
                     }
                 }
@@ -156,8 +175,7 @@ public class Board
                 if (piece is King king)
                 {
                     var color = piece.Color;
-                    var threateningMoves =
-                        GetThreateningMoves(color == PieceColor.White ? PieceColor.Black : PieceColor.White);
+                    var threateningMoves = ignoreThreatheningMoves ? new HashSet<Coord>() : GetThreateningMoves(color == PieceColor.White ? PieceColor.Black : PieceColor.White);
 
                     if (king.HasMoved == false)
                     {
@@ -208,8 +226,17 @@ public class Board
         {
             var destinationPiece = GetPiece(to);
 
+            // Déplacement sur une case vide
+
+            if (destinationPiece == null)
+            {                            
+                _pieces[to.X, to.Y] = _pieces[from.X, from.Y];
+                _pieces[to.X, to.Y].HasMoved = true;
+                _pieces[from.X, from.Y] = null;
+            
+            }
             //Déplacement sur une piece alliée
-            if (currentPiece.Color == destinationPiece.Color)
+            else if (currentPiece.Color == destinationPiece.Color)
             {
                 // Arrive juste pour le castle donc on peut assumer que c'est le cas
                 currentPiece.HasMoved = true;
@@ -221,17 +248,14 @@ public class Board
             // Déplcament sur une case ennemi
             else if (currentPiece.Color != destinationPiece.Color)
             {
-                var deadPiece = _pieces[to.X, to.Y];
-                _pieces[to.X, to.Y] = _pieces[from.X, from.Y];
                 //TODO: on peut garder une liste des pieces morte au besoin
-            }
-            // Déplacement sur une case vide
-            else
-            {
-                _pieces[to.X, to.Y] = _pieces[from.X, from.Y];
-                _pieces[to.X, to.Y].HasMoved = true;
+                var deadPiece = _pieces[to.X, to.Y];
+                var attackingPiece = _pieces[from.X, from.Y];
+
                 _pieces[from.X, from.Y] = null;
+                _pieces[to.X, to.Y] = attackingPiece;
             }
+
 
 
             return true;
@@ -255,7 +279,7 @@ public class Board
                 if (currentPiece != null && currentPiece.Color == color)
                 {
                     // On ajoute les déplacement possibles de la pièce dans la liste
-                    threateningMoves.UnionWith(GetAvailableMoves(new Coord(i, j)));
+                    threateningMoves.UnionWith(GetAvailableMoves(new Coord(i, j), true));
                 }
             }
         }

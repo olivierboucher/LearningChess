@@ -1,4 +1,6 @@
-namespace ChessExample;
+using System.Drawing;
+
+namespace ChessLibrary;
 
 public class Coord
 {
@@ -9,6 +11,12 @@ public class Coord
     {
         X = x;
         Y = y;
+    }
+
+    public Coord(Point point)
+    {
+        X = point.X;
+        Y = point.Y;
     }
 
     private bool Equals(Coord other)

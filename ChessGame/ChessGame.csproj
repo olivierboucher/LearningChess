@@ -1,0 +1,45 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Assets\bishop_black.png" />
+    <None Remove="Assets\bishop_white.png" />
+    <None Remove="Assets\king_black.png" />
+    <None Remove="Assets\king_white.png" />
+    <None Remove="Assets\knight_black.png" />
+    <None Remove="Assets\knight_white.png" />
+    <None Remove="Assets\pawn_black.png" />
+    <None Remove="Assets\pawn_white.png" />
+    <None Remove="Assets\queen_black.png" />
+    <None Remove="Assets\queen_white.png" />
+    <None Remove="Assets\rook_black.png" />
+    <None Remove="Assets\rook_white.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Assets\bishop_black.png" />
+    <EmbeddedResource Include="Assets\bishop_white.png" />
+    <EmbeddedResource Include="Assets\king_black.png" />
+    <EmbeddedResource Include="Assets\king_white.png" />
+    <EmbeddedResource Include="Assets\knight_black.png" />
+    <EmbeddedResource Include="Assets\knight_white.png" />
+    <EmbeddedResource Include="Assets\pawn_black.png" />
+    <EmbeddedResource Include="Assets\pawn_white.png" />
+    <EmbeddedResource Include="Assets\queen_black.png" />
+    <EmbeddedResource Include="Assets\queen_white.png" />
+    <EmbeddedResource Include="Assets\rook_black.png" />
+    <EmbeddedResource Include="Assets\rook_white.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ChessExample\ChessLibrary.csproj" />
+  </ItemGroup>
+
+</Project>

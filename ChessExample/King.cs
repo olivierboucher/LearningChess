@@ -1,4 +1,4 @@
-namespace ChessExample;
+namespace ChessLibrary;
 
 public class King : Piece
 {
@@ -6,7 +6,7 @@ public class King : Piece
     {
     }
 
-    public override Coord[] GetAvailableMoves(Coord coord)
+    public override Coord[] GetAvailableMoves(Board board, Coord coord)
     {
         return
         [
@@ -24,5 +24,24 @@ public class King : Piece
     public override Piece Copy()
     {
         return new King(Color);
+    }
+
+    public override string Name()
+    {
+        return "King";
+    }
+
+    public override bool Equals(Piece? other)
+    {
+        if (other == null) return false;
+        if (other == this) return true;
+
+        if (other is King)
+        {
+            var otherBishop = (King)other;
+            if (otherBishop.Color == Color) return true;
+        }
+
+        return false;
     }
 }

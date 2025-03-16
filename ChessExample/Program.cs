@@ -1,6 +1,6 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
-using ChessExample;
+using ChessLibrary;
 
 
 Board board = new Board();
