@@ -19,6 +19,11 @@ public class Coord
         Y = point.Y;
     }
 
+    public override string? ToString()
+    {
+        return $"{X},{Y}";
+    }
+
     private bool Equals(Coord other)
     {
         return X == other.X && Y == other.Y;

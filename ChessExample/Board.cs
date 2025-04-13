@@ -6,6 +6,13 @@ public class Board
 
     private Piece?[,] _pieces = new Piece?[SIZE, SIZE];
 
+    private bool isSimuated = false;
+
+    public Board(bool isSimulated): this()
+    {
+        this.isSimuated = isSimulated;
+    }
+
     public Board()
     {
         for (int i = 0; i < SIZE; i++)
@@ -47,7 +54,7 @@ public class Board
 
     // Click sur bouton 1,1, Coord = 1,1
 
-    private Coord? GetPieceCoords(PieceColor color, Type clazz)
+    public Coord? GetPieceCoords(PieceColor color, Type clazz)
     {
         for (int i = 0; i < SIZE; i++)
         {
@@ -100,6 +107,38 @@ public class Board
         return GetAvailableMoves(coord, false);
     }
 
+    public Coord[] GetAttackMoves(Coord coord)
+    {
+        if (coord.X >= 0 && coord.X < SIZE && coord.Y >= 0 && coord.Y < SIZE)
+        {
+            var piece = _pieces[coord.X, coord.Y];
+            if (piece != null)
+            {
+                var coords = piece.GetAttackMoves(this, coord);
+                var validMoves = new List<Coord>();
+
+                // Valide que chaque move est une coordonnée réelle
+                foreach (var possibleCoord in coords)
+                {
+                    if (possibleCoord.X >= 0 && possibleCoord.X < SIZE && possibleCoord.Y >= 0 && possibleCoord.Y < SIZE)
+                    {
+                        // Si une piece à cet endroit est de la même couleur, on ignore l'ajout de la position
+                        if (_pieces[possibleCoord.X, possibleCoord.Y]?.Color == piece.Color)
+                        {
+                            continue;
+                        }
+
+                        validMoves.Add(possibleCoord);
+                    }
+                }
+
+                return validMoves.ToArray();
+            }
+        }
+
+        return [];
+    }
+
     public Coord[] GetAvailableMoves(Coord coord, bool ignoreThreatheningMoves)
     {
         if (coord.X >= 0 && coord.X < SIZE && coord.Y >= 0 && coord.Y < SIZE)
@@ -107,6 +146,7 @@ public class Board
             var piece = _pieces[coord.X, coord.Y];
             if (piece != null)
             {
+                Console.WriteLine("Getting available moves for {0} situated at {1}", piece, coord);
                 var coords = piece.GetAvailableMoves(this, coord);
                 var validMoves = new List<Coord>();
 
@@ -128,49 +168,6 @@ public class Board
                 /**
                  * Ajout des mouvements spéciaux *
                  */
-
-                // Pawn
-                if (piece is Pawn)
-                {
-                    if (piece.Color == PieceColor.Black)
-                    {
-                        if(coord.X < 7 && coord.Y < 7)
-                        {
-                            if (_pieces[coord.X + 1, coord.Y + 1]?.Color == PieceColor.White)
-                            {
-                                validMoves.Add(new Coord(coord.X + 1, coord.Y + 1));
-                            }
-                        }
-
-                        if(coord.X > 0 && coord.X < 7)
-                        {
-                            if (_pieces[coord.X - 1, coord.Y + 1]?.Color == PieceColor.White)
-                            {
-                                validMoves.Add(new Coord(coord.X - 1, coord.Y + 1));
-                            }
-                        }
-                    }
-                    else if (piece.Color == PieceColor.White)
-                    {
-
-                        if(coord.X < 7 && coord.Y > 0)
-                        {
-                            if (_pieces[coord.X + 1, coord.Y - 1]?.Color == PieceColor.Black)
-                            {
-                                validMoves.Add(new Coord(coord.X + 1, coord.Y - 1));
-                            }
-                        }
-
-                        if(coord.X > 0 && coord.Y > 0)
-                        {
-
-                            if (_pieces[coord.X - 1, coord.Y - 1]?.Color == PieceColor.Black)
-                            {
-                                validMoves.Add(new Coord(coord.X - 1, coord.Y - 1));
-                            }
-                        }
-                    }
-                }
 
                 if (piece is King king)
                 {
@@ -209,6 +206,21 @@ public class Board
 
                 //TODO: En passant
 
+
+                if(!ignoreThreatheningMoves && this.IsKingChecked(piece.Color))
+                {
+                    var solveCheckmateMoves = new HashSet<Coord>();
+
+                    foreach (Coord validMove in validMoves)
+                    {
+                        if(this.SolvesCheck(piece.Color, coord, validMove))
+                        {
+                            solveCheckmateMoves.Add(validMove);
+                        }
+                    }
+                    return solveCheckmateMoves.ToArray();
+                }
+
                 return validMoves.ToArray();
             }
         }
@@ -229,11 +241,11 @@ public class Board
             // Déplacement sur une case vide
 
             if (destinationPiece == null)
-            {                            
+            {
                 _pieces[to.X, to.Y] = _pieces[from.X, from.Y];
                 _pieces[to.X, to.Y].HasMoved = true;
                 _pieces[from.X, from.Y] = null;
-            
+
             }
             //Déplacement sur une piece alliée
             else if (currentPiece.Color == destinationPiece.Color)
@@ -264,6 +276,44 @@ public class Board
         return false;
     }
 
+    public bool MovePieceOverride(Coord from, Coord to)
+    {
+        var currentPiece = GetPiece(from);
+        var destinationPiece = GetPiece(to);
+
+        // Déplacement sur une case vide
+
+        if (destinationPiece == null)
+        {
+            _pieces[to.X, to.Y] = _pieces[from.X, from.Y];
+            _pieces[to.X, to.Y].HasMoved = true;
+            _pieces[from.X, from.Y] = null;
+
+        }
+        //Déplacement sur une piece alliée
+        else if (currentPiece.Color == destinationPiece.Color)
+        {
+            // Arrive juste pour le castle donc on peut assumer que c'est le cas
+            currentPiece.HasMoved = true;
+            destinationPiece.HasMoved = true;
+
+            _pieces[from.X, from.Y] = destinationPiece;
+            _pieces[to.X, to.Y] = currentPiece;
+        }
+        // Déplcament sur une case ennemi
+        else if (currentPiece.Color != destinationPiece.Color)
+        {
+            //TODO: on peut garder une liste des pieces morte au besoin
+            var deadPiece = _pieces[to.X, to.Y];
+            var attackingPiece = _pieces[from.X, from.Y];
+
+            _pieces[from.X, from.Y] = null;
+            _pieces[to.X, to.Y] = attackingPiece;
+        }
+
+        return true;
+    }
+
 
     public HashSet<Coord> GetThreateningMoves(PieceColor color)
     {
@@ -279,7 +329,7 @@ public class Board
                 if (currentPiece != null && currentPiece.Color == color)
                 {
                     // On ajoute les déplacement possibles de la pièce dans la liste
-                    threateningMoves.UnionWith(GetAvailableMoves(new Coord(i, j), true));
+                    threateningMoves.UnionWith(GetAttackMoves(new Coord(i, j)));
                 }
             }
         }
@@ -289,7 +339,7 @@ public class Board
 
     public Board Copy()
     {
-        var copy = new Board();
+        var copy = new Board(true);
 
         for (int i = 0; i < SIZE; i++)
         {
@@ -342,7 +392,7 @@ public class Board
                     foreach (var possibleMove in possibleMoves)
                     {
                         var simulatedBoard = Copy();
-                        simulatedBoard.MovePiece(new Coord(i, j), possibleMove);
+                        simulatedBoard.MovePieceOverride(new Coord(i, j), possibleMove);
 
                         if (!simulatedBoard.IsKingChecked(color))
                         {
@@ -354,5 +404,12 @@ public class Board
         }
 
         return true;
+    }
+
+    public bool SolvesCheck(PieceColor color, Coord from, Coord to)
+    {
+        var simulatedBoard = Copy();
+        simulatedBoard.MovePieceOverride(from, to);
+        return !simulatedBoard.IsKingChecked(color);
     }
 }

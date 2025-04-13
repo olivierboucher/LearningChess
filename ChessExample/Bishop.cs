@@ -76,10 +76,10 @@ public class Bishop : Piece
         if (other == null) return false;
         if (other == this) return true;
 
-        if(other is Bishop)
+        if (other is Bishop)
         {
             var otherBishop = (Bishop)other;
-            if(otherBishop.Color == Color) return true;
+            if (otherBishop.Color == Color) return true;
         }
 
         return false;
