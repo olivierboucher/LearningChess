@@ -20,6 +20,7 @@ namespace ChessGame
 
             this.board = new Board();
             this.Render();
+            //hello
         }
 
 
