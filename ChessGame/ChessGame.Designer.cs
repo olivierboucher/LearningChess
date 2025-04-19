@@ -53,7 +53,7 @@
             boardTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 12.5F));
             boardTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 12.5F));
             boardTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 12.5F));
-            boardTableLayoutPanel.Size = new Size(1160, 1137);
+            boardTableLayoutPanel.Size = new Size(1160, 1000);
             boardTableLayoutPanel.TabIndex = 0;
             boardTableLayoutPanel.CellPaint += boardTableLayoutPanel_CellPaint;
             boardTableLayoutPanel.MouseClick += boardTableLayoutPanel_MouseClick;
@@ -63,7 +63,7 @@
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             AutoSize = true;
-            ClientSize = new Size(1184, 1161);
+            ClientSize = new Size(1184, 1067);
             Controls.Add(boardTableLayoutPanel);
             Name = "ChessGame";
             Text = "Form1";

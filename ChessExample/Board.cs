@@ -1,3 +1,5 @@
+using System.Drawing;
+
 namespace ChessLibrary;
 
 public class Board
@@ -169,40 +171,37 @@ public class Board
                  * Ajout des mouvements spéciaux *
                  */
 
+                //Castle
                 if (piece is King king)
                 {
                     var color = piece.Color;
                     var threateningMoves = ignoreThreatheningMoves ? new HashSet<Coord>() : GetThreateningMoves(color == PieceColor.White ? PieceColor.Black : PieceColor.White);
-
+                    var kingCoord = GetPieceCoords(color, typeof(King));
                     if (king.HasMoved == false)
                     {
                         var rookPositions = GetAllPieceCoords(piece.Color, typeof(Rook));
                         foreach (var rookPosition in rookPositions)
                         {
                             var rookPiece = GetPiece(rookPosition);
-                            if (rookPiece.HasMoved == false)
+                            if (rookPiece.HasMoved == false && !IsKingPositionChecked(color,kingCoord))
                             {
-                                validMoves.Add(rookPosition);
+                                if(rookPosition.X == 7 && _pieces[rookPosition.X-1,rookPosition.Y] == null && _pieces[rookPosition.X - 2, rookPosition.Y] == null && !IsKingPositionChecked(color, new Coord(kingCoord.X + 1,kingCoord.Y)) && !IsKingPositionChecked(color, new Coord(kingCoord.X + 2, kingCoord.Y)))
+                                {
+                                    validMoves.Add(new Coord(rookPosition.X - 1,rookPosition.Y));
+                                }
+                                if (rookPosition.X == 0 && _pieces[rookPosition.X + 1, rookPosition.Y] == null && _pieces[rookPosition.X + 2, rookPosition.Y] == null && !IsKingPositionChecked(color, new Coord(kingCoord.X - 1, kingCoord.Y)) && !IsKingPositionChecked(color, new Coord(kingCoord.X - 2, kingCoord.Y)))
+                                {
+                                    validMoves.Add(new Coord(rookPosition.X + 2, rookPosition.Y));
+                                }
+
                             }
                         }
                     }
 
-
                     // On enlève tout les mouvement ou le roi serait mis en échec
                     validMoves.RemoveAll(x => threateningMoves.Contains(x));
                 }
-
-                //Castle
-                if (piece is Rook rook)
-                {
-                    var kingPosition = GetPieceCoords(piece.Color, typeof(King));
-                    var kingPiece = GetPiece(kingPosition);
-
-                    if (rook.HasMoved == false && kingPiece.HasMoved == false)
-                    {
-                        validMoves.Add(kingPosition);
-                    }
-                }
+                
 
                 //TODO: En passant
 
@@ -242,21 +241,29 @@ public class Board
 
             if (destinationPiece == null)
             {
+                // Pour le castle
+                if (_pieces[from.X, from.Y] is King && from.X - to.X == 2 || _pieces[from.X, from.Y] is King && from.X - to.X == -2)
+                { 
+                    currentPiece.HasMoved = true;
+                    if (to.X > 4)
+                    {
+                        _pieces[to.X, to.Y] = currentPiece;
+                        _pieces[to.X - 1, to.Y] = new Rook(currentPiece.Color);
+                        _pieces[to.X + 1, to.Y] = null;
+                    }
+                    if (to.X < 4)
+                    {
+                        _pieces[to.X, to.Y] = currentPiece;
+                        _pieces[to.X + 1, to.Y] = new Rook(currentPiece.Color);
+                        _pieces[to.X - 2, to.Y] = null;
+                    }
+                }
                 _pieces[to.X, to.Y] = _pieces[from.X, from.Y];
                 _pieces[to.X, to.Y].HasMoved = true;
                 _pieces[from.X, from.Y] = null;
-
+                
             }
-            //Déplacement sur une piece alliée
-            else if (currentPiece.Color == destinationPiece.Color)
-            {
-                // Arrive juste pour le castle donc on peut assumer que c'est le cas
-                currentPiece.HasMoved = true;
-                destinationPiece.HasMoved = true;
-
-                _pieces[from.X, from.Y] = destinationPiece;
-                _pieces[to.X, to.Y] = currentPiece;
-            }
+            
             // Déplcament sur une case ennemi
             else if (currentPiece.Color != destinationPiece.Color)
             {
@@ -285,21 +292,28 @@ public class Board
 
         if (destinationPiece == null)
         {
+            // Pour le castle
+            if (_pieces[from.X, from.Y] is King && from.X - to.X == 2 || _pieces[from.X, from.Y] is King && from.X - to.X == -2)
+            {                
+                currentPiece.HasMoved = true;
+                if (to.X > 4)
+                {
+                    _pieces[to.X, to.Y] = currentPiece;
+                    _pieces[to.X - 1, to.Y] = new Rook(currentPiece.Color);
+                    _pieces[to.X + 1, to.Y] = null;
+                }
+                if (to.X < 4)
+                {
+                    _pieces[to.X, to.Y] = currentPiece;
+                    _pieces[to.X + 1, to.Y] = new Rook(currentPiece.Color);
+                    _pieces[to.X - 2, to.Y] = null;
+                }
+            }
             _pieces[to.X, to.Y] = _pieces[from.X, from.Y];
             _pieces[to.X, to.Y].HasMoved = true;
-            _pieces[from.X, from.Y] = null;
-
+            _pieces[from.X, from.Y] = null;            
         }
-        //Déplacement sur une piece alliée
-        else if (currentPiece.Color == destinationPiece.Color)
-        {
-            // Arrive juste pour le castle donc on peut assumer que c'est le cas
-            currentPiece.HasMoved = true;
-            destinationPiece.HasMoved = true;
-
-            _pieces[from.X, from.Y] = destinationPiece;
-            _pieces[to.X, to.Y] = currentPiece;
-        }
+        
         // Déplcament sur une case ennemi
         else if (currentPiece.Color != destinationPiece.Color)
         {
@@ -360,6 +374,14 @@ public class Board
         //Détecte le check
         var threateningMoves = GetThreateningMoves(ennemyColor);
         // On vérifie si le roi se situe sur un des décplaments ennemi possibles
+        return threateningMoves.Contains(kingCoords);
+    }
+
+    private bool IsKingPositionChecked(PieceColor color, Coord kingCoords)
+    {
+        var ennemyColor = color == PieceColor.White ? PieceColor.Black : PieceColor.White;
+       
+        var threateningMoves = GetThreateningMoves(ennemyColor);
         return threateningMoves.Contains(kingCoords);
     }
 
