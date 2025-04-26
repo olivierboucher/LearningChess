@@ -9,7 +9,8 @@ public class Board
     private Piece?[,] _pieces = new Piece?[SIZE, SIZE];
 
     private bool isSimuated = false;
-
+    private bool isEnPassant = false;
+    private int[] lastMoved = new int [4];
     public Board(bool isSimulated): this()
     {
         this.isSimuated = isSimulated;
@@ -183,13 +184,13 @@ public class Board
                         foreach (var rookPosition in rookPositions)
                         {
                             var rookPiece = GetPiece(rookPosition);
-                            if (rookPiece.HasMoved == false && !IsKingPositionChecked(color,kingCoord))
+                            if (rookPiece.HasMoved == false && !IsKingPositionChecked(color, kingCoord))
                             {
-                                if(rookPosition.X == 7 && _pieces[rookPosition.X-1,rookPosition.Y] == null && _pieces[rookPosition.X - 2, rookPosition.Y] == null && !IsKingPositionChecked(color, new Coord(kingCoord.X + 1,kingCoord.Y)) && !IsKingPositionChecked(color, new Coord(kingCoord.X + 2, kingCoord.Y)))
+                                if (rookPosition.X == 7 && _pieces[rookPosition.X - 1, rookPosition.Y] == null && _pieces[rookPosition.X - 2, rookPosition.Y] == null && !IsKingPositionChecked(color, new Coord(kingCoord.X + 1, kingCoord.Y)) && !IsKingPositionChecked(color, new Coord(kingCoord.X + 2, kingCoord.Y)))
                                 {
-                                    validMoves.Add(new Coord(rookPosition.X - 1,rookPosition.Y));
+                                    validMoves.Add(new Coord(rookPosition.X - 1, rookPosition.Y));
                                 }
-                                if (rookPosition.X == 0 && _pieces[rookPosition.X + 1, rookPosition.Y] == null && _pieces[rookPosition.X + 2, rookPosition.Y] == null && !IsKingPositionChecked(color, new Coord(kingCoord.X - 1, kingCoord.Y)) && !IsKingPositionChecked(color, new Coord(kingCoord.X - 2, kingCoord.Y)))
+                                if (rookPosition.X == 0 && _pieces[rookPosition.X + 1, rookPosition.Y] == null && _pieces[rookPosition.X + 2, rookPosition.Y] == null &&   _pieces[rookPosition.X + 3, rookPosition.Y] == null && !IsKingPositionChecked(color, new Coord(kingCoord.X - 1, kingCoord.Y)) && !IsKingPositionChecked(color, new Coord(kingCoord.X - 2, kingCoord.Y)))
                                 {
                                     validMoves.Add(new Coord(rookPosition.X + 2, rookPosition.Y));
                                 }
@@ -201,12 +202,39 @@ public class Board
                     // On enlève tout les mouvement ou le roi serait mis en échec
                     validMoves.RemoveAll(x => threateningMoves.Contains(x));
                 }
-                
-
-                //TODO: En passant
 
 
-                if(!ignoreThreatheningMoves && this.IsKingChecked(piece.Color))
+                //En passant
+                var colors = _pieces[coord.X, coord.Y].Color;
+
+
+                if (colors == PieceColor.Black)
+                {
+                    if (coord.X + 1 < 8 && _pieces[coord.X + 1, coord.Y] is Pawn && _pieces[coord.X, coord.Y] is Pawn && lastMoved[2] == coord.X + 1 && lastMoved[3] == coord.Y && lastMoved[1] - lastMoved[3] == 2 && _pieces[coord.X + 1, coord.Y].Color != colors)
+                    {
+                        validMoves.Add(new Coord(coord.X + 1, coord.Y + 1));
+                        isEnPassant = true;
+                    }
+                    if (coord.X - 1 >= 0 && _pieces[coord.X - 1, coord.Y] is Pawn && _pieces[coord.X, coord.Y] is Pawn && lastMoved[2] == coord.X - 1 && lastMoved[3] == coord.Y && lastMoved[1] - lastMoved[3] == 2 && _pieces[coord.X - 1, coord.Y].Color != colors)
+                    {
+                        validMoves.Add(new Coord(coord.X - 1, coord.Y + 1));
+                        isEnPassant = true;
+                    }
+                }
+                if (colors == PieceColor.White)
+                {
+                    if (coord.X + 1 < 8 && _pieces[coord.X + 1, coord.Y] is Pawn && _pieces[coord.X, coord.Y] is Pawn && lastMoved[2] == coord.X + 1 && lastMoved[3] == coord.Y && lastMoved[1] - lastMoved[3] == -2 && _pieces[coord.X + 1, coord.Y].Color != colors)
+                    {
+                        validMoves.Add(new Coord(coord.X + 1, coord.Y - 1));
+                        isEnPassant = true;
+                    }
+                    if (coord.X - 1 >= 0 && _pieces[coord.X - 1, coord.Y] is Pawn && _pieces[coord.X, coord.Y] is Pawn && lastMoved[2] == coord.X - 1 && lastMoved[3] == coord.Y && lastMoved[1] - lastMoved[3] == -2 && _pieces[coord.X - 1, coord.Y].Color != colors)
+                    {
+                        validMoves.Add(new Coord(coord.X - 1, coord.Y - 1));
+                        isEnPassant = true;
+                    }
+                }
+                if (!ignoreThreatheningMoves && this.IsKingChecked(piece.Color))
                 {
                     var solveCheckmateMoves = new HashSet<Coord>();
 
@@ -231,7 +259,7 @@ public class Board
     {
         var currentPiece = GetPiece(from);
         var possibleMoves = GetAvailableMoves(from);
-
+       
         // Vérifier si "to" est dans la liste des moves possible, sinon, on fait rien
         if (possibleMoves.Contains(to))
         {
@@ -241,6 +269,8 @@ public class Board
 
             if (destinationPiece == null)
             {
+                
+                
                 // Pour le castle
                 if (_pieces[from.X, from.Y] is King && from.X - to.X == 2 || _pieces[from.X, from.Y] is King && from.X - to.X == -2)
                 { 
@@ -250,18 +280,37 @@ public class Board
                         _pieces[to.X, to.Y] = currentPiece;
                         _pieces[to.X - 1, to.Y] = new Rook(currentPiece.Color);
                         _pieces[to.X + 1, to.Y] = null;
+                        
                     }
                     if (to.X < 4)
                     {
                         _pieces[to.X, to.Y] = currentPiece;
                         _pieces[to.X + 1, to.Y] = new Rook(currentPiece.Color);
                         _pieces[to.X - 2, to.Y] = null;
+                        
                     }
                 }
+                // Pour En passant
+
+                lastMoved[0] = from.X;
+                lastMoved[1] = from.Y;
+                lastMoved[2] = to.X;
+                lastMoved[3] = to.Y;
                 _pieces[to.X, to.Y] = _pieces[from.X, from.Y];
                 _pieces[to.X, to.Y].HasMoved = true;
                 _pieces[from.X, from.Y] = null;
-                
+                if (isEnPassant)
+                {
+                    if (currentPiece.Color == PieceColor.White)
+                    {
+                        _pieces[to.X, to.Y + 1] = null;
+                    }
+                    else
+                    {
+                        _pieces[to.X, to.Y - 1] = null;
+                    }
+                }
+
             }
             
             // Déplcament sur une case ennemi
@@ -273,8 +322,9 @@ public class Board
 
                 _pieces[from.X, from.Y] = null;
                 _pieces[to.X, to.Y] = attackingPiece;
+                
             }
-
+            
 
 
             return true;
@@ -287,7 +337,7 @@ public class Board
     {
         var currentPiece = GetPiece(from);
         var destinationPiece = GetPiece(to);
-
+        Coord[] lastMove;
         // Déplacement sur une case vide
 
         if (destinationPiece == null)
@@ -301,17 +351,24 @@ public class Board
                     _pieces[to.X, to.Y] = currentPiece;
                     _pieces[to.X - 1, to.Y] = new Rook(currentPiece.Color);
                     _pieces[to.X + 1, to.Y] = null;
+                    
                 }
                 if (to.X < 4)
                 {
                     _pieces[to.X, to.Y] = currentPiece;
                     _pieces[to.X + 1, to.Y] = new Rook(currentPiece.Color);
                     _pieces[to.X - 2, to.Y] = null;
+                    
                 }
             }
+            lastMoved[0] = from.X;
+            lastMoved[1] = from.Y;
+            lastMoved[2] = to.X;
+            lastMoved[3] = to.Y;
             _pieces[to.X, to.Y] = _pieces[from.X, from.Y];
             _pieces[to.X, to.Y].HasMoved = true;
-            _pieces[from.X, from.Y] = null;            
+            _pieces[from.X, from.Y] = null;
+            
         }
         
         // Déplcament sur une case ennemi
@@ -323,6 +380,7 @@ public class Board
 
             _pieces[from.X, from.Y] = null;
             _pieces[to.X, to.Y] = attackingPiece;
+            
         }
 
         return true;
@@ -434,4 +492,6 @@ public class Board
         simulatedBoard.MovePieceOverride(from, to);
         return !simulatedBoard.IsKingChecked(color);
     }
+    
+    
 }
